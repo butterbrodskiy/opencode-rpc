@@ -37,13 +37,13 @@ it should be added automatically to your opencode.json, but in case if it isn't:
   "plugin": ["opencode-discord-rpc"],
   "plugin_config": {
     "opencode-discord-rpc": {
-      "clientId": "1234567..." # in case if you want your own discord application client id. by default - uses my client id :)
-      "showProject": true # set to "false" if you want to hide the project you're working on
-      "showTokens": true # set to "false" if you want to hide input/output token stats
-      "showCost": true # set to "false" if you want to hide money spent stats
-      "customText": "deep into vibecoding in" # add your own text instead of "Working on"
-      "hideProjectText": "your mom" # add your own text instead of your project's name
-      "providerIcons": { # if you want to add your own icons instead of provided ones; or if you have custom added providers
+      "clientId": "1234567...", // your own discord application client id (default: built-in)
+      "showProject": true, // set to false to hide the project name
+      "showTokens": true, // set to false to hide input/output token stats
+      "showCost": true, // set to false to hide cost stats
+      "customText": "deep into vibecoding in", // custom prefix instead of "Working on"
+      "hideProjectText": "your mom", // custom text instead of project name when hidden
+      "providerIcons": { // override or add custom provider icons
         "openai": "https://example.com/my-icon.png",
         "user-added-provider": "https://example.com/my-icon-2.png"
       }
@@ -51,6 +51,8 @@ it should be added automatically to your opencode.json, but in case if it isn't:
   }
 }
 ```
+
+also, if you create a `.hiderpc` file in your project, it will force `showProject = false` for that specific project.
 
 ## built-in provider icons
 

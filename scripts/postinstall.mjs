@@ -10,8 +10,6 @@ if (process.env.SKIP_OPENCODE_AUTO_CONFIG) {
 
 function findOpenCodeConfig() {
   const cwd = process.cwd();
-
-  // walk up from cwd looking for opencode.json / opencode.jsonc
   let dir = cwd;
   while (true) {
     for (const name of ["opencode.json", "opencode.jsonc"]) {
@@ -22,51 +20,61 @@ function findOpenCodeConfig() {
     if (parent === dir) break;
     dir = parent;
   }
-
-  // check the global config
   for (const name of ["opencode.json", "opencode.jsonc"]) {
     const p = join(homedir(), ".config", "opencode", name);
     if (existsSync(p)) return p;
   }
-
-  // no config found — create one in cwd
   return join(cwd, "opencode.json");
 }
 
-function stripJsonComments(text) {
-  return text
-    .replace(/\/\/.*$/gm, "")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/,(?=\s*[}\]])/g, "");
-}
-
 const configPath = findOpenCodeConfig();
-let config = {};
 
 if (existsSync(configPath)) {
-  try {
-    const raw = readFileSync(configPath, "utf-8");
-    config = JSON.parse(stripJsonComments(raw));
-  } catch {
-    console.warn(`[opencode-discord-rpc] could not parse ${configPath}, skipping auto-config`);
+  const raw = readFileSync(configPath, "utf-8");
+
+  // check if plugin is already referenced in the file (text-based, no parsing)
+  if (raw.includes(`"${PLUGIN_NAME}"`)) {
+    console.log(`[opencode-discord-rpc] already in ${configPath}, nothing to do`);
     process.exit(0);
   }
+
+  // find the "plugin" array and insert our entry
+  const pluginMatch = raw.match(/"plugin"\s*:\s*\[/);
+  if (pluginMatch) {
+    const insertAt = pluginMatch.index + pluginMatch[0].length;
+    const before = raw.slice(0, insertAt);
+    const after = raw.slice(insertAt);
+
+    // determine indentation by looking at what follows the opening bracket
+    const rest = after.trimStart();
+    const indent = after.length - after.trimStart().length > 0
+      ? after.slice(0, after.length - after.trimStart().length)
+      : "    ";
+
+    const entry = rest.startsWith("]") || rest.startsWith("\n") && rest.trimStart().startsWith("]")
+      ? `\n${indent}"${PLUGIN_NAME}"\n${indent.slice(0, -2)}`
+      : `"${PLUGIN_NAME}", `;
+
+    writeFileSync(configPath, before + entry + after, "utf-8");
+    console.log(`[opencode-discord-rpc] added to ${configPath}`);
+  } else {
+    // no plugin array found, append one at the end of the JSON object
+    const trimmed = raw.trimEnd();
+    const needsComma = !trimmed.endsWith("{") && !trimmed.endsWith(",");
+    const insertion = `${needsComma ? "," : ""}\n  "plugin": ["${PLUGIN_NAME}"]\n}`;
+
+    // replace the closing brace
+    const lastBrace = trimmed.lastIndexOf("}");
+    if (lastBrace >= 0) {
+      const result = trimmed.slice(0, lastBrace) + insertion;
+      writeFileSync(configPath, result + "\n", "utf-8");
+    } else {
+      writeFileSync(configPath, `{\n  "plugin": ["${PLUGIN_NAME}"]\n}\n`, "utf-8");
+    }
+    console.log(`[opencode-discord-rpc] added to ${configPath}`);
+  }
+} else {
+  // no config exists, create one
+  writeFileSync(configPath, `{\n  "plugin": ["${PLUGIN_NAME}"]\n}\n`, "utf-8");
+  console.log(`[opencode-discord-rpc] created ${configPath}`);
 }
-
-const plugins = Array.isArray(config.plugin) ? config.plugin : [];
-
-const alreadyAdded = plugins.some((p) => {
-  if (typeof p === "string") return p === PLUGIN_NAME;
-  if (Array.isArray(p) && p.length > 0) return p[0] === PLUGIN_NAME;
-  return false;
-});
-
-if (alreadyAdded) {
-  console.log(`[opencode-discord-rpc] already in ${configPath}, nothing to do`);
-  process.exit(0);
-}
-
-config.plugin = [...plugins, PLUGIN_NAME];
-
-writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n", "utf-8");
-console.log(`[opencode-discord-rpc] added to ${configPath}`);

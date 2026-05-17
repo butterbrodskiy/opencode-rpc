@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { Client } from "@xhayper/discord-rpc";
 import type { Plugin, Config } from "@opencode-ai/plugin";
 import type { Event, AssistantMessage, Session } from "@opencode-ai/sdk";
@@ -101,7 +102,10 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
   const tupleOptions = (rawOptions || {}) as unknown as DiscordRPOptions;
   let options: DiscordRPOptions = { ...tupleOptions };
 
-  const providerIcons = { ...DEFAULT_PROVIDER_ICONS, ...options.providerIcons };
+  function resolveIcon(providerID: string): string {
+    const icons = { ...DEFAULT_PROVIDER_ICONS, ...options.providerIcons };
+    return icons[providerID] || GENERIC_ICON;
+  }
 
   const sessions = new Set<string>();
   const messages: Array<{ id: string; sessionID: string; tokensInput: number; tokensOutput: number; cost: number }> = [];
@@ -134,8 +138,9 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
     }
 
     const projectDir = currentProjectDir || input.worktree || input.directory || "";
-    const showProject = options.showProject !== false;
-    const hideText = options.hideProjectText || "";
+    const hasHideFile = projectDir ? existsSync(`${projectDir}/.hiderpc`) : false;
+    const showProject = !hasHideFile && options.showProject !== false;
+    const hideText = options.hideProjectText || "something...";
     const projectName = getProjectName(projectDir, showProject, hideText);
     const prefix = options.customText || "Working on";
 
@@ -165,13 +170,13 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
     if (showCost && cost > 0) {
       parts.push(`$${cost.toFixed(2)}`);
     }
-    return parts.length > 0 ? parts.join(" / ") : undefined;
+    return parts.length > 0 ? parts.join(" / ") : "";
   }
 
   function updatePresence() {
     if (!client || !client.isConnected) return;
 
-    const smallImage = currentModel ? providerIcons[currentModel.providerID] || GENERIC_ICON : undefined;
+    const smallImage = currentModel ? resolveIcon(currentModel.providerID) : undefined;
     const smallText = currentModel ? `${currentModel.providerID}/${currentModel.modelID}` : undefined;
 
     client.user?.setActivity({
@@ -202,7 +207,7 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
         discordReady = true;
         updatePresence();
       });
-      client.login().catch(() => {});
+      client.login().catch(() => { client = null; });
     } catch {
       // discord not available
     }
@@ -256,6 +261,12 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
       if (event.type === "session.deleted") {
         const info = (event as any).properties.info as Session;
         sessions.delete(info.id);
+        for (let i = messages.length - 1; i >= 0; i--) {
+          if (messages[i].sessionID === info.id) {
+            seenMessages.delete(messages[i].id);
+            messages.splice(i, 1);
+          }
+        }
         if (currentSessionID === info.id) {
           currentSessionID = sessions.size > 0 ? Array.from(sessions)[sessions.size - 1] : null;
         }
@@ -275,8 +286,8 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
           currentModel = { providerID: assistant.providerID, modelID: assistant.modelID };
           if (assistant.path?.cwd) currentProjectDir = assistant.path.cwd;
 
-          const tokensInput = assistant.tokens.input;
-          const tokensOutput = assistant.tokens.output + assistant.tokens.reasoning;
+          const tokensInput = assistant.tokens?.input ?? 0;
+          const tokensOutput = (assistant.tokens?.output ?? 0) + (assistant.tokens?.reasoning ?? 0);
 
           if (!seenMessages.has(assistant.id)) {
             seenMessages.add(assistant.id);
