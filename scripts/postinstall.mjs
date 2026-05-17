@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, dirname } from "node:path";
 
-const PLUGIN_NAME = "opencode-discord-rpc";
+const PLUGIN_NAME = "opencode-rpc";
 
 if (process.env.SKIP_OPENCODE_AUTO_CONFIG) {
   process.exit(0);
@@ -34,7 +34,7 @@ if (existsSync(configPath)) {
 
   // check if plugin is already referenced in the file (text-based, no parsing)
   if (raw.includes(`"${PLUGIN_NAME}"`)) {
-    console.log(`[opencode-discord-rpc] already in ${configPath}, nothing to do`);
+    console.log(`[opencode-rpc] already in ${configPath}, nothing to do`);
     process.exit(0);
   }
 
@@ -56,7 +56,7 @@ if (existsSync(configPath)) {
       : `"${PLUGIN_NAME}", `;
 
     writeFileSync(configPath, before + entry + after, "utf-8");
-    console.log(`[opencode-discord-rpc] added to ${configPath}`);
+    console.log(`[opencode-rpc] added to ${configPath}`);
   } else {
     // no plugin array found, append one at the end of the JSON object
     const trimmed = raw.trimEnd();
@@ -71,10 +71,10 @@ if (existsSync(configPath)) {
     } else {
       writeFileSync(configPath, `{\n  "plugin": ["${PLUGIN_NAME}"]\n}\n`, "utf-8");
     }
-    console.log(`[opencode-discord-rpc] added to ${configPath}`);
+    console.log(`[opencode-rpc] added to ${configPath}`);
   }
 } else {
   // no config exists, create one
   writeFileSync(configPath, `{\n  "plugin": ["${PLUGIN_NAME}"]\n}\n`, "utf-8");
-  console.log(`[opencode-discord-rpc] created ${configPath}`);
+  console.log(`[opencode-rpc] created ${configPath}`);
 }

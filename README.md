@@ -1,4 +1,4 @@
-# opencode-discord-rpc
+# opencode-rpc
 
 Discord Rich Presence for [OpenCode](https://opencode.ai).
 
@@ -9,7 +9,7 @@ Discord Rich Presence for [OpenCode](https://opencode.ai).
 ## install
 
 ```bash
-bun add opencode-discord-rpc
+bun add opencode-rpc
 ```
 or
 ```bash
@@ -26,7 +26,7 @@ it should be added automatically to your opencode.json, but in case if it isn't:
 
 ```json
 {
-  "plugin": ["opencode-discord-rpc"]
+  "plugin": ["opencode-rpc"]
 }
 ```
 
@@ -34,9 +34,9 @@ it should be added automatically to your opencode.json, but in case if it isn't:
 
 ```json
 {
-  "plugin": ["opencode-discord-rpc"],
+  "plugin": ["opencode-rpc"],
   "plugin_config": {
-    "opencode-discord-rpc": {
+    "opencode-rpc": {
       "clientId": "1234567...", // your own discord application client id (default: built-in)
       "showProject": true, // set to false to hide the project name
       "showTokens": true, // set to false to hide input/output token stats

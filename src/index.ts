@@ -236,7 +236,7 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
 
   return {
     config: async (cfg: Config) => {
-      const pluginConfig = (cfg as any).plugin_config?.["opencode-discord-rpc"];
+      const pluginConfig = (cfg as any).plugin_config?.["opencode-rpc"];
       if (pluginConfig) {
         options = { ...options, ...pluginConfig };
       }

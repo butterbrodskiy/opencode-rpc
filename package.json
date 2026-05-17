@@ -1,6 +1,6 @@
 {
-  "name": "opencode-discord-rpc",
-  "version": "1.0.0",
+  "name": "opencode-rpc",
+  "version": "1.0.2",
   "type": "module",
   "license": "MIT",
   "main": "./dist/index.js",
