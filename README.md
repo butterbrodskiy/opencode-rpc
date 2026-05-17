@@ -102,7 +102,6 @@ also, if you create a `.hiderpc` file in your project, it will force `showProjec
 | `cortecs` | <img src="https://www.google.com/s2/favicons?domain=cortecs.ai&sz=32" width="24" /> |
 | `llmgateway` | <img src="https://www.google.com/s2/favicons?domain=llmgateway.io&sz=32" width="24" /> |
 | `frogbot` | <img src="https://www.google.com/s2/favicons?domain=frogbot.ai&sz=32" width="24" /> |
-| `opencode` | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/opencode.png" width="24" /> |
 | `opencode-go`, `opencode-zen` | uses the OpenCode app icon |
 
 any unrecognized provider falls back to the OpenCode icon unless specified in providerIcons.
