@@ -9,6 +9,7 @@ Discord Rich Presence for [OpenCode](https://opencode.ai).
 ## install
 
 ```bash
+bun pm trust opencode-rpc
 bun add opencode-rpc
 ```
 or
@@ -20,9 +21,7 @@ or
 pnpm add opencode-discord-rpc
 ```
 
-## setup
-
-it should be added automatically to your opencode.json, but in case if it isn't:
+if you choose to not run `bun pm trust opencode-rpc` (it just adds the plugin to opencode.json, that's it) or if for some reason auto-add to opencode.json didn't work, you can add the plugin to opencode.json by yourself:
 
 ```json
 {
