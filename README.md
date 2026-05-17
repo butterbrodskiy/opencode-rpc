@@ -14,11 +14,11 @@ bun add opencode-rpc
 ```
 or
 ```bash
-npm install opencode-discord-rpc
+npm install opencode-rpc
 ```
 or
 ```bash
-pnpm add opencode-discord-rpc
+pnpm add opencode-rpc
 ```
 
 if you choose to not run `bun pm trust opencode-rpc` (it just adds the plugin to opencode.json, that's it) or if for some reason auto-add to opencode.json didn't work, you can add the plugin to opencode.json by yourself:
