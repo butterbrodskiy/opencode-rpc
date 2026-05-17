@@ -13,11 +13,11 @@ bun add opencode-rpc
 ```
 or
 ```bash
-npm install opencode-discord-rpc
+npm install opencode-rpc
 ```
 or
 ```bash
-pnpm add opencode-discord-rpc
+pnpm add opencode-rpc
 ```
 
 ## setup
