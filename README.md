@@ -1,18 +1,10 @@
 # opencode-discord-rpc
 
-Discord Rich Presence for [OpenCode](https://opencode.ai) — shows what you're working on, which model is active, and your token usage directly on your Discord profile.
+Discord Rich Presence for [OpenCode](https://opencode.ai).
 
 <p align="center">
-  <img src="https://opencode.ai/_build/assets/opencode-desktop-icon-OSkS5hfD.png" width="128" alt="OpenCode" />
+  <img width="458" height="163" src="https://github.com/user-attachments/assets/222a7434-38b3-44ca-9292-abde7b7863c5" />
 </p>
-
-## what it shows
-
-- **line 1** — `Working on project-name` (customizable prefix, or `At the main screen...` when idle)
-- **line 2** — `↓ 12.3k | ↑ 4.5k / $0.17` (input tokens ↓, output tokens ↑, total cost)
-- **small icon** — provider logo (openai, anthropic, groq, etc.)
-- **small text** — `provider/model-id`
-- **elapsed time** — since you launched OpenCode
 
 ## install
 
@@ -34,7 +26,7 @@ pnpm add opencode-discord-rpc
 
 ## setup
 
-Add it to your `opencode.json`:
+it should be added automatically to your opencode.json, but in case if it isn't:
 
 ```json
 {
@@ -42,64 +34,27 @@ Add it to your `opencode.json`:
 }
 ```
 
-that's it — Discord must be running on the same machine. the plugin uses a pre-configured Discord application so you don't need to create your own.
-
 ## configuration
-
-pass options as the second element of the plugin tuple, or via `plugin_config`:
-
-```json
-{
-  "plugin": [
-    ["opencode-discord-rpc", {
-      "customText": "Vibecoding in",
-      "showCost": false
-    }]
-  ]
-}
-```
-
-or using `plugin_config` (useful when you want to share options across configs):
 
 ```json
 {
   "plugin": ["opencode-discord-rpc"],
   "plugin_config": {
     "opencode-discord-rpc": {
-      "customText": "Vibecoding in"
+      "clientId": "1234567..." # in case if you want your own discord application client id. by default - uses my client id :)
+      "showProject": true # set to "false" if you want to hide the project you're working on
+      "showTokens": true # set to "false" if you want to hide input/output token stats
+      "showCost": true # set to "false" if you want to hide money spent stats
+      "customText": "deep into vibecoding in" # add your own text instead of "Working on"
+      "hideProjectText": "your mom" # add your own text instead of your project's name
+      "providerIcons": { # if you want to add your own icons instead of provided ones; or if you have custom added providers
+        "openai": "https://example.com/my-icon.png",
+        "user-added-provider": "https://example.com/my-icon-2.png"
+      }
     }
   }
 }
 ```
-
-### options
-
-| option | type | default | description |
-|---|---|---|---|
-| `clientId` | `string` | `"1505556269036077178"` | your own Discord application client ID |
-| `showProject` | `boolean` | `true` | show project folder name in status |
-| `showTokens` | `boolean` | `true` | show `↓ input | ↑ output` token counts |
-| `showCost` | `boolean` | `true` | show estimated cost in USD |
-| `customText` | `string` | `"Working on"` | prefix before the project name |
-| `hideProjectText` | `string` | `"something..."` | fallback text when `showProject` is false |
-| `providerIcons` | `object` | built-in map | override or add provider icon URLs |
-
-### custom provider icons
-
-```json
-{
-  "plugin": [
-    ["opencode-discord-rpc", {
-      "providerIcons": {
-        "my-custom-provider": "https://example.com/icon.png",
-        "openai": "https://example.com/custom-openai.png"
-      }
-    }]
-  ]
-}
-```
-
-keys are merged with the built-in defaults — your values take priority.
 
 ## built-in provider icons
 
@@ -130,61 +85,10 @@ these provider IDs are recognized out of the box and show their logo as the smal
 | `zenmux` | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zenmux.png" width="24" /> |
 | `ovhcloud` | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/ovh.png" width="24" /> |
 | `ollama` | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/ollama.png" width="24" /> |
-| `opencode` | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/opencode.png" width="24" /> |
 | `opencode-go`, `opencode-zen` | uses the OpenCode app icon |
 
-any unrecognized provider falls back to the OpenCode icon.
+any unrecognized provider falls back to the OpenCode icon unless specified in providerIcons.
 
-## examples
+## uhhh
 
-**default — everything on:**
-
-```json
-{ "plugin": ["opencode-discord-rpc"] }
-```
-
-Discord shows: `Working on my-project` / `↓ 85.2k | ↑ 12.1k / $0.42`
-
-**hide project name:**
-
-```json
-{ "plugin": [["opencode-discord-rpc", { "showProject": false }]] }
-```
-
-Discord shows: `Working on something...` / `↓ 85.2k | ↑ 12.1k / $0.42`
-
-**custom prefix, hide cost:**
-
-```json
-{ "plugin": [["opencode-discord-rpc", { "customText": "Coding in", "showCost": false }]] }
-```
-
-Discord shows: `Coding in my-project` / `↓ 85.2k | ↑ 12.1k`
-
-**minimal — only project name, no stats:**
-
-```json
-{ "plugin": [["opencode-discord-rpc", { "showTokens": false, "showCost": false }]] }
-```
-
-Discord shows: `Working on my-project`
-
-## how token display works
-
-the plugin listens to `message.updated` events from OpenCode and accumulates tokens per session. each assistant message contributes its `input`, `output`, and `reasoning` tokens:
-
-- **↓ input** = `tokens.input`
-- **↑ output** = `tokens.output + tokens.reasoning`
-- **cost** = sum of all `message.cost`
-
-messages are deduplicated by ID — if a message is streamed and updated multiple times, only the latest totals are kept. the presence refreshes with a 3-second debounce.
-
-## requirements
-
-- [OpenCode](https://opencode.ai) (any recent version)
-- Discord desktop client running on the same machine
-- Node.js, Bun, or Deno runtime
-
-## license
-
-MIT
+everything was vibecoded with opencode go's kimi k2.6 :) but if it works it works
