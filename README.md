@@ -65,13 +65,13 @@ these provider IDs are recognized out of the box and show their logo as the smal
 | `openai` | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/openai.png" width="24" /> |
 | `anthropic` | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/anthropic.png" width="24" /> |
 | `google`, `google-gemini`, `gemini`, `google-vertex` | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/google-gemini.png" width="24" /> |
-| `groq` | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/groq.png" width="24" /> |
-| `together`, `together-color`, `togetherai` | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/together-color.png" width="24" /> |
-| `cohere` | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cohere.png" width="24" /> |
-| `mistral` | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/mistral.png" width="24" /> |
+| `groq` | <img src="https://www.google.com/s2/favicons?domain=groq.com&sz=32" width="24" /> |
+| `together`, `together-color`, `togetherai` | <img src="https://www.google.com/s2/favicons?domain=together.ai&sz=32" width="24" /> |
+| `cohere` | <img src="https://www.google.com/s2/favicons?domain=cohere.com&sz=32" width="24" /> |
+| `mistral` | <img src="https://www.google.com/s2/favicons?domain=mistral.ai&sz=32" width="24" /> |
 | `azure` | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/azure.png" width="24" /> |
 | `aws`, `amazon`, `amazon-bedrock` | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/amazon-web-services.png" width="24" /> |
-| `xai` | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/xai.png" width="24" /> |
+| `xai` | <img src="https://www.google.com/s2/favicons?domain=x.ai&sz=32" width="24" /> |
 | `deepseek` | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/deepseek.png" width="24" /> |
 | `perplexity` | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/perplexity.png" width="24" /> |
 | `copilot`, `github-copilot`, `github` | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/github-copilot.png" width="24" /> |
