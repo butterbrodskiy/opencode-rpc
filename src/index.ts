@@ -110,6 +110,7 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
   const sessions = new Set<string>();
   const messages: Array<{ id: string; sessionID: string; tokensInput: number; tokensOutput: number; cost: number }> = [];
   const seenMessages = new Set<string>();
+  const sessionTotals = new Map<string, { tokensInput: number; tokensOutput: number; cost: number }>();
   let currentSessionID: string | null = null;
   let currentModel: { providerID: string; modelID: string } | null = null;
   let currentProjectDir: string | null = null;
@@ -118,18 +119,16 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
   let client: Client | null = null;
   let discordReady = false;
 
+  function addToSessionTotals(sessionID: string, tokensInput: number, tokensOutput: number, cost: number) {
+    const existing = sessionTotals.get(sessionID) || { tokensInput: 0, tokensOutput: 0, cost: 0 };
+    existing.tokensInput += tokensInput;
+    existing.tokensOutput += tokensOutput;
+    existing.cost += cost;
+    sessionTotals.set(sessionID, existing);
+  }
+
   function getSessionTotals(sessionID: string) {
-    let tokensInput = 0;
-    let tokensOutput = 0;
-    let cost = 0;
-    for (const msg of messages) {
-      if (msg.sessionID === sessionID) {
-        tokensInput += msg.tokensInput;
-        tokensOutput += msg.tokensOutput;
-        cost += msg.cost;
-      }
-    }
-    return { tokensInput, tokensOutput, cost };
+    return sessionTotals.get(sessionID) || { tokensInput: 0, tokensOutput: 0, cost: 0 };
   }
 
   function buildDetails(): string {
@@ -261,6 +260,7 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
       if (event.type === "session.deleted") {
         const info = (event as any).properties.info as Session;
         sessions.delete(info.id);
+        sessionTotals.delete(info.id);
         for (let i = messages.length - 1; i >= 0; i--) {
           if (messages[i].sessionID === info.id) {
             seenMessages.delete(messages[i].id);
@@ -298,9 +298,16 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
               tokensOutput,
               cost: assistant.cost,
             });
+            addToSessionTotals(assistant.sessionID, tokensInput, tokensOutput, assistant.cost);
           } else {
             const existing = messages.find(m => m.id === assistant.id);
             if (existing) {
+              const deltaInput = tokensInput - existing.tokensInput;
+              const deltaOutput = tokensOutput - existing.tokensOutput;
+              const deltaCost = assistant.cost - existing.cost;
+              if (deltaInput > 0 || deltaOutput > 0 || deltaCost > 0) {
+                addToSessionTotals(assistant.sessionID, deltaInput, deltaOutput, deltaCost);
+              }
               existing.tokensInput = tokensInput;
               existing.tokensOutput = tokensOutput;
               existing.cost = assistant.cost;
