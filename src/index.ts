@@ -155,6 +155,31 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
     return false;
   }
 
+  function getRootSessionID(sessionID: string): string {
+    let current = sessionID;
+    let parent = sessionParents.get(current);
+    while (parent) {
+      current = parent;
+      parent = sessionParents.get(current);
+    }
+    return current;
+  }
+
+  async function ensureSessionParent(sessionID: string) {
+    if (sessionParents.has(sessionID) || sessions.has(sessionID)) return;
+    try {
+      const res: any = await input.client.session.get({ path: { id: sessionID } });
+      if (res.data) {
+        sessions.add(sessionID);
+        if (res.data.parentID !== undefined) {
+          sessionParents.set(sessionID, res.data.parentID);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   function buildDetails(): string {
     if (!currentSessionID) {
       return "At the main screen...";
@@ -179,7 +204,8 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
 
     const showTokens = options.showTokens !== false;
     const showCost = options.showCost !== false;
-    const { tokensInput, tokensOutput, cost } = getFamilyTotals(currentSessionID);
+    const rootID = getRootSessionID(currentSessionID);
+    const { tokensInput, tokensOutput, cost } = getFamilyTotals(rootID);
 
     const parts: string[] = [];
     if (showTokens) {
@@ -288,8 +314,6 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
       if (event.type === "session.deleted") {
         const info = (event as any).properties.info as Session;
         sessions.delete(info.id);
-        sessionTotals.delete(info.id);
-        sessionParents.delete(info.id);
         for (let i = messages.length - 1; i >= 0; i--) {
           if (messages[i].sessionID === info.id) {
             seenMessages.delete(messages[i].id);
@@ -311,6 +335,9 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
           queueUpdate();
         } else if (msg.role === "assistant") {
           const assistant = msg as AssistantMessage;
+          if (!sessions.has(assistant.sessionID)) {
+            await ensureSessionParent(assistant.sessionID);
+          }
           currentSessionID = assistant.sessionID;
           currentModel = { providerID: assistant.providerID, modelID: assistant.modelID };
           if (assistant.path?.cwd) currentProjectDir = assistant.path.cwd;
