@@ -111,6 +111,7 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
   const messages: Array<{ id: string; sessionID: string; tokensInput: number; tokensOutput: number; cost: number }> = [];
   const seenMessages = new Set<string>();
   const sessionTotals = new Map<string, { tokensInput: number; tokensOutput: number; cost: number }>();
+  const sessionParents = new Map<string, string | undefined>();
   let currentSessionID: string | null = null;
   let currentModel: { providerID: string; modelID: string } | null = null;
   let currentProjectDir: string | null = null;
@@ -129,6 +130,29 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
 
   function getSessionTotals(sessionID: string) {
     return sessionTotals.get(sessionID) || { tokensInput: 0, tokensOutput: 0, cost: 0 };
+  }
+
+  function getFamilyTotals(sessionID: string) {
+    let tokensInput = 0;
+    let tokensOutput = 0;
+    let cost = 0;
+    for (const [id, totals] of sessionTotals) {
+      if (id === sessionID || isDescendantOf(id, sessionID)) {
+        tokensInput += totals.tokensInput;
+        tokensOutput += totals.tokensOutput;
+        cost += totals.cost;
+      }
+    }
+    return { tokensInput, tokensOutput, cost };
+  }
+
+  function isDescendantOf(sessionID: string, ancestorID: string): boolean {
+    let parent = sessionParents.get(sessionID);
+    while (parent) {
+      if (parent === ancestorID) return true;
+      parent = sessionParents.get(parent);
+    }
+    return false;
   }
 
   function buildDetails(): string {
@@ -155,7 +179,7 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
 
     const showTokens = options.showTokens !== false;
     const showCost = options.showCost !== false;
-    const { tokensInput, tokensOutput, cost } = getSessionTotals(currentSessionID);
+    const { tokensInput, tokensOutput, cost } = getFamilyTotals(currentSessionID);
 
     const parts: string[] = [];
     if (showTokens) {
@@ -218,7 +242,10 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
         .then((res: any) => {
           if (res.data && Array.isArray(res.data)) {
             for (const s of res.data) {
-              if (s.id) sessions.add(s.id);
+              if (s.id) {
+                sessions.add(s.id);
+                if (s.parentID !== undefined) sessionParents.set(s.id, s.parentID);
+              }
               if (s.directory && !currentProjectDir) currentProjectDir = s.directory;
             }
             if (!currentSessionID && sessions.size > 0) {
@@ -252,6 +279,7 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
       if (event.type === "session.created") {
         const info = (event as any).properties.info as Session;
         sessions.add(info.id);
+        sessionParents.set(info.id, info.parentID);
         currentSessionID = info.id;
         if (info.directory) currentProjectDir = info.directory;
         queueUpdate();
@@ -261,6 +289,7 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
         const info = (event as any).properties.info as Session;
         sessions.delete(info.id);
         sessionTotals.delete(info.id);
+        sessionParents.delete(info.id);
         for (let i = messages.length - 1; i >= 0; i--) {
           if (messages[i].sessionID === info.id) {
             seenMessages.delete(messages[i].id);
