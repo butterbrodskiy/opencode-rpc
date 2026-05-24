@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, appendFileSync } from "node:fs";
 import { Client } from "@xhayper/discord-rpc";
 import type { Plugin, Config } from "@opencode-ai/plugin";
 import type { Event, AssistantMessage, Session } from "@opencode-ai/sdk";
@@ -76,6 +76,7 @@ const DEFAULT_PROVIDER_ICONS: Record<string, string> = {
   opencode: `${CDN}/opencode.png`,
   "opencode-go": OPENCODE_LOGO,
   "opencode-zen": OPENCODE_LOGO,
+  omniroute: OPENCODE_LOGO,
 };
 
 const GENERIC_ICON = `${CDN}/opencode.png`;
@@ -86,6 +87,17 @@ function getProjectName(directory: string, showProject: boolean, hideText: strin
   }
   const parts = directory.split(/[\\/]/).filter(p => p.length > 0);
   return parts[parts.length - 1] || "";
+}
+
+function cleanOmnirouteModel(model: { providerID: string; modelID: string }): { providerID: string; modelID: string } {
+  if (!model.modelID.startsWith("omniroute/")) return model;
+  const stripped = model.modelID.slice("omniroute/".length);
+  if (model.providerID === "omniroute") {
+    const firstSlash = stripped.indexOf("/");
+    if (firstSlash === -1) return { providerID: stripped, modelID: "" };
+    return { providerID: stripped.slice(0, firstSlash), modelID: stripped.slice(firstSlash + 1) };
+  }
+  return { providerID: model.providerID, modelID: stripped };
 }
 
 function formatTokens(count: number): string {
@@ -206,6 +218,9 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
     const showCost = options.showCost !== false;
     const rootID = getRootSessionID(currentSessionID);
     const { tokensInput, tokensOutput, cost } = getFamilyTotals(rootID);
+    try {
+      appendFileSync("C:\\Users\\butter\\.local\\share\\opencode\\opencode-rpc-debug.log", JSON.stringify({ time: Date.now(), type: "buildState", currentSessionID, rootID, totals: { tokensInput, tokensOutput, cost }, sessionTotalsKeys: Array.from(sessionTotals.keys()), sessionParentsKeys: Array.from(sessionParents.entries()) }) + "\n");
+    } catch { /* ignore */ }
 
     const parts: string[] = [];
     if (showTokens) {
@@ -302,8 +317,15 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
     event: async ({ event }: { event: Event }) => {
       if (!client) initDiscord();
 
+      const debugLog = (data: any) => {
+        try {
+          appendFileSync("C:\\Users\\butter\\.local\\share\\opencode\\opencode-rpc-debug.log", JSON.stringify({ time: Date.now(), ...data }) + "\n");
+        } catch { /* ignore */ }
+      };
+
       if (event.type === "session.created") {
         const info = (event as any).properties.info as Session;
+        debugLog({ type: "session.created", id: info.id, parentID: info.parentID });
         sessions.add(info.id);
         sessionParents.set(info.id, info.parentID);
         currentSessionID = info.id;
@@ -313,6 +335,7 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
 
       if (event.type === "session.deleted") {
         const info = (event as any).properties.info as Session;
+        debugLog({ type: "session.deleted", id: info.id, parentID: info.parentID });
         sessions.delete(info.id);
         for (let i = messages.length - 1; i >= 0; i--) {
           if (messages[i].sessionID === info.id) {
@@ -331,7 +354,7 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
 
         if (msg.role === "user") {
           currentSessionID = msg.sessionID;
-          currentModel = msg.model;
+          currentModel = msg.model ? cleanOmnirouteModel(msg.model) : null;
           queueUpdate();
         } else if (msg.role === "assistant") {
           const assistant = msg as AssistantMessage;
@@ -339,11 +362,22 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
             await ensureSessionParent(assistant.sessionID);
           }
           currentSessionID = assistant.sessionID;
-          currentModel = { providerID: assistant.providerID, modelID: assistant.modelID };
+          currentModel = cleanOmnirouteModel({ providerID: assistant.providerID, modelID: assistant.modelID });
           if (assistant.path?.cwd) currentProjectDir = assistant.path.cwd;
 
           const tokensInput = assistant.tokens?.input ?? 0;
           const tokensOutput = (assistant.tokens?.output ?? 0) + (assistant.tokens?.reasoning ?? 0);
+
+          debugLog({
+            type: "message.updated.assistant",
+            sessionID: assistant.sessionID,
+            msgID: assistant.id,
+            cost: assistant.cost,
+            tokensInput,
+            tokensOutput,
+            parentID: sessionParents.get(assistant.sessionID),
+            sessionsKnown: sessions.has(assistant.sessionID),
+          });
 
           if (!seenMessages.has(assistant.id)) {
             seenMessages.add(assistant.id);
@@ -362,6 +396,7 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
               const deltaOutput = tokensOutput - existing.tokensOutput;
               const deltaCost = assistant.cost - existing.cost;
               if (deltaInput > 0 || deltaOutput > 0 || deltaCost > 0) {
+                debugLog({ type: "message.delta", sessionID: assistant.sessionID, msgID: assistant.id, deltaInput, deltaOutput, deltaCost });
                 addToSessionTotals(assistant.sessionID, deltaInput, deltaOutput, deltaCost);
               }
               existing.tokensInput = tokensInput;
