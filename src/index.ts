@@ -13,73 +13,11 @@ interface DiscordRPOptions {
   providerIcons?: Record<string, string>;
 }
 
-const CDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png";
 const OPENCODE_LOGO = "https://opencode.ai/_build/assets/opencode-desktop-icon-OSkS5hfD.png";
 
-const DEFAULT_PROVIDER_ICONS: Record<string, string> = {
-  openai: `${CDN}/openai.png`,
-  anthropic: `${CDN}/anthropic.png`,
-  google: `${CDN}/google-gemini.png`,
-  "google-gemini": `${CDN}/google-gemini.png`,
-  gemini: `${CDN}/google-gemini.png`,
-  "google-vertex": `${CDN}/google-gemini.png`,
-  groq: "https://www.google.com/s2/favicons?domain=groq.com&sz=256",
-  together: "https://www.google.com/s2/favicons?domain=together.ai&sz=256",
-  "together-color": "https://www.google.com/s2/favicons?domain=together.ai&sz=256",
-  togetherai: "https://www.google.com/s2/favicons?domain=together.ai&sz=256",
-  cohere: "https://www.google.com/s2/favicons?domain=cohere.com&sz=256",
-  mistral: "https://www.google.com/s2/favicons?domain=mistral.ai&sz=256",
-  azure: `${CDN}/azure.png`,
-  aws: `${CDN}/amazon-web-services.png`,
-  amazon: `${CDN}/amazon-web-services.png`,
-  "amazon-bedrock": `${CDN}/amazon-web-services.png`,
-  xai: "https://www.google.com/s2/favicons?domain=x.ai&sz=256",
-  deepseek: `${CDN}/deepseek.png`,
-  perplexity: `${CDN}/perplexity.png`,
-  copilot: `${CDN}/github-copilot.png`,
-  "github-copilot": `${CDN}/github-copilot.png`,
-  github: `${CDN}/github-copilot.png`,
-  gitlab: `${CDN}/gitlab.png`,
-  huggingface: `${CDN}/hugging-face.png`,
-  cloudflare: `${CDN}/cloudflare.png`,
-  "cloudflare-ai-gateway": `${CDN}/cloudflare.png`,
-  "cloudflare-workers-ai": `${CDN}/cloudflare.png`,
-  nvidia: `${CDN}/nvidia.png`,
-  databricks: `${CDN}/databricks.png`,
-  vercel: `${CDN}/vercel.png`,
-  vultr: `${CDN}/vultr.png`,
-  zenmux: `${CDN}/zenmux.png`,
-  ovhcloud: `${CDN}/ovh.png`,
-  ollama: `${CDN}/ollama.png`,
-  openrouter: "https://www.google.com/s2/favicons?domain=openrouter.ai&sz=256",
-  deepinfra: "https://www.google.com/s2/favicons?domain=deepinfra.com&sz=256",
-  cerebras: "https://www.google.com/s2/favicons?domain=cerebras.ai&sz=256",
-  digitalocean: "https://www.google.com/s2/favicons?domain=digitalocean.com&sz=256",
-  moonshotai: "https://www.google.com/s2/favicons?domain=moonshot.ai&sz=256",
-  venice: "https://www.google.com/s2/favicons?domain=venice.ai&sz=256",
-  helicone: "https://www.google.com/s2/favicons?domain=helicone.ai&sz=256",
-  nebius: "https://www.google.com/s2/favicons?domain=nebius.com&sz=256",
-  minimax: "https://www.google.com/s2/favicons?domain=minimax.io&sz=256",
-  scaleway: "https://www.google.com/s2/favicons?domain=scaleway.com&sz=256",
-  zai: "https://www.google.com/s2/favicons?domain=z.ai&sz=256",
-  "io-net": "https://www.google.com/s2/favicons?domain=io.net&sz=256",
-  stackit: "https://www.google.com/s2/favicons?domain=stackit.de&sz=256",
-  baseten: "https://www.google.com/s2/favicons?domain=baseten.co&sz=256",
-  "fireworks-ai": "https://www.google.com/s2/favicons?domain=www.fireworks.ai&sz=256",
-  "sap-ai-core": "https://www.google.com/s2/favicons?domain=sap.com&sz=256",
-  "302ai": "https://www.google.com/s2/favicons?domain=302.ai&sz=256",
-  cortecs: "https://www.google.com/s2/favicons?domain=cortecs.ai&sz=256",
-  llmgateway: "https://www.google.com/s2/favicons?domain=llmgateway.io&sz=256",
-  frogbot: "https://www.google.com/s2/favicons?domain=frogbot.ai&sz=256",
-  "ollama-cloud": `${CDN}/ollama.png`,
-  "azure-cognitive-services": `${CDN}/azure.png`,
-  opencode: `${CDN}/opencode.png`,
-  "opencode-go": OPENCODE_LOGO,
-  "opencode-zen": OPENCODE_LOGO,
-  omniroute: OPENCODE_LOGO,
-};
-
-const GENERIC_ICON = `${CDN}/opencode.png`;
+function buildModelsDevIconUrl(providerID: string): string {
+  return `https://images.weserv.nl/?url=https://models.dev/logos/${providerID}.svg&output=png&bg=white&w=256&h=256`;
+}
 
 function getProjectName(directory: string, showProject: boolean, hideText: string): string {
   if (showProject === false) {
@@ -90,14 +28,18 @@ function getProjectName(directory: string, showProject: boolean, hideText: strin
 }
 
 function cleanOmnirouteModel(model: { providerID: string; modelID: string }): { providerID: string; modelID: string } {
-  if (!model.modelID.startsWith("omniroute/")) return model;
-  const stripped = model.modelID.slice("omniroute/".length);
-  if (model.providerID === "omniroute") {
+  if (model.providerID !== "omniroute") return model;
+
+  if (model.modelID.startsWith("omniroute/")) {
+    const stripped = model.modelID.slice("omniroute/".length);
     const firstSlash = stripped.indexOf("/");
     if (firstSlash === -1) return { providerID: stripped, modelID: "" };
     return { providerID: stripped.slice(0, firstSlash), modelID: stripped.slice(firstSlash + 1) };
   }
-  return { providerID: model.providerID, modelID: stripped };
+
+  const firstSlash = model.modelID.indexOf("/");
+  if (firstSlash === -1) return { providerID: model.modelID, modelID: "" };
+  return { providerID: model.modelID.slice(0, firstSlash), modelID: model.modelID.slice(firstSlash + 1) };
 }
 
 function formatTokens(count: number): string {
@@ -115,8 +57,7 @@ const discordRPPlugin: Plugin = async (input, rawOptions) => {
   let options: DiscordRPOptions = { ...tupleOptions };
 
   function resolveIcon(providerID: string): string {
-    const icons = { ...DEFAULT_PROVIDER_ICONS, ...options.providerIcons };
-    return icons[providerID] || GENERIC_ICON;
+    return options.providerIcons?.[providerID] || buildModelsDevIconUrl(providerID);
   }
 
   const sessions = new Set<string>();
