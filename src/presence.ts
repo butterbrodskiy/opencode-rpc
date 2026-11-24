@@ -102,6 +102,7 @@ export class Presence {
   private currentSessionID: string | null = null;
   private model: ModelRef | null = null;
   private projectDir: string;
+  private active = true;
 
   constructor(options: DiscordRpcOptions, directory: string) {
     this.options = options;
@@ -110,6 +111,34 @@ export class Presence {
 
   setOptions(next: DiscordRpcOptions): void {
     this.options = { ...this.options, ...next };
+  }
+
+  clear(): void {
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+    try {
+      void this.client?.user?.clearActivity()?.catch?.(() => {});
+    } catch {
+      // ignore
+    }
+  }
+
+  setActive(active: boolean): void {
+    if (this.active === active) return;
+    this.active = active;
+    debugLog({ type: "active", active });
+    if (active) {
+      this.start();
+      this.queue();
+    } else {
+      this.clear();
+    }
+  }
+
+  isActive(): boolean {
+    return this.active;
   }
 
   start(): void {
@@ -130,11 +159,13 @@ export class Presence {
   }
 
   dispose(): void {
+    this.active = false;
     if (this.timer) {
       clearTimeout(this.timer);
       this.timer = null;
     }
     try {
+      void this.client?.user?.clearActivity()?.catch?.(() => {});
       void this.client?.destroy();
     } catch {
       // ignore
@@ -197,6 +228,7 @@ export class Presence {
   }
 
   queue(): void {
+    if (!this.active) return;
     if (this.timer) return;
     this.timer = setTimeout(() => {
       this.timer = null;
@@ -205,6 +237,7 @@ export class Presence {
   }
 
   flush(): void {
+    if (!this.active) return;
     const details = this.buildDetails();
     const state = this.buildState();
     debugLog({ type: "flush", details, state, connected: Boolean(this.client?.isConnected) });
